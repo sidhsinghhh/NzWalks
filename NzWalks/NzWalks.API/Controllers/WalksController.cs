@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using NzWalk.API.Repositories;
+using NzWalks.API.Models.DTO;
 
 namespace NzWalks.API.Controllers
 {
@@ -37,6 +38,11 @@ namespace NzWalks.API.Controllers
         [HttpPost]
         public async Task<IActionResult> AddWalk(Models.DTO.WalkRequestBody walk)
         {
+            ValidateWalk(walk);
+            if (ModelState.Count > 0)
+            {
+                return BadRequest(ModelState);
+            }
             var walkDomain = mapper.Map<Models.Domain.Walk>(walk);
             walkDomain = await walksRepository.AddWalkAsync(walkDomain);
             var walkDTO = mapper.Map<Models.DTO.Walks>(walkDomain);
@@ -46,6 +52,11 @@ namespace NzWalks.API.Controllers
         [Route("{id:guid}")]
         public async Task<IActionResult> UpdateWalk([FromRoute] Guid id, [FromBody] Models.DTO.WalkRequestBody walk)
         {
+            ValidateWalk(walk);
+            if(ModelState.Count > 0)
+            {
+                return BadRequest(ModelState);
+            }
             var walkDomain = mapper.Map<Models.Domain.Walk>(walk);
             walkDomain = await walksRepository.UpdateWalkAsync(id, walkDomain);
             if(walkDomain == null)
@@ -66,6 +77,21 @@ namespace NzWalks.API.Controllers
             }
             var walkDTO = mapper.Map<Models.DTO.Walks>(walk);
             return Ok(walkDTO);
+        }
+        private void ValidateWalk(WalkRequestBody walk)
+        {
+            if(walk == null)
+            {
+                ModelState.AddModelError("Walk object", "Walk object cannot be null");
+            }
+            if (string.IsNullOrEmpty(walk.Name))
+            {
+                ModelState.AddModelError(nameof(walk.Name), $"{nameof(walk.Name)} cannot be null or empty");
+            }
+            if (walk.Length < 1)
+            {
+                ModelState.AddModelError(nameof(walk.Length), $"{nameof(walk.Length)} cannot less than 1");
+            }
         }
     }
 }

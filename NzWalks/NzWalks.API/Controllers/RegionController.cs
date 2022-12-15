@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NzWalks.API.Models.DTO;
 using NzWalks.API.Repositories;
@@ -19,6 +20,7 @@ namespace NzWalks.API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "reader")]
         public async Task<IActionResult> GetAllRegions()
         {
             //fetch from repository and return the DTO
@@ -44,6 +46,11 @@ namespace NzWalks.API.Controllers
         [HttpPost]
         public async Task<IActionResult> AddRegionAsync([FromBody] RegionRequestBody region)
         {
+            ValidateRegion(region);
+            if(ModelState.Count > 0)
+            {
+                return BadRequest(ModelState);
+            }
             var regionDomain = mapper.Map<Models.Domain.Region>(region);
             regionDomain = await regionRepository.AddRegionAsync(regionDomain);
             var regionDTO = mapper.Map<Models.DTO.Region>(regionDomain);
@@ -65,6 +72,11 @@ namespace NzWalks.API.Controllers
         [Route("{id:guid}")]
         public async Task<IActionResult> UpdateRegion([FromRoute] Guid id, [FromBody] RegionRequestBody region)
         {
+            ValidateRegion(region);
+            if (ModelState.Count > 0)
+            {
+                return BadRequest(ModelState);
+            }
             var regionDomain = mapper.Map<Models.Domain.Region>(region);
             regionDomain = await regionRepository.UpdateRegionAsync(id, regionDomain);
             if(regionDomain== null)
@@ -72,6 +84,14 @@ namespace NzWalks.API.Controllers
                 return NotFound();
             }
             return Ok(regionDomain);
+        }
+
+        private void ValidateRegion(RegionRequestBody region)
+        {
+            if(region == null)
+            {
+                ModelState.AddModelError("region", "region cannot be null");
+            }
         }
     }
 }
